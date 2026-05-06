@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+pydantic
+numpy
+opencv-python
+matplotlib
+sqlalchemy
+
+opencv-python>=4.5.0
+numpy>=1.19.0
+matplotlib>=3.3.0
+gradio>=3.0.0
+pytest

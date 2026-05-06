@@ -1,0 +1,15 @@
+1. Read command-line arguments
+2. Setup UDP (optional)
+3. Detect cameras
+4. Initialize processor (core logic)
+5. Setup plotting system
+6. Setup keyboard controls
+
+
+1. Capture face
+2. Extract forehead region
+3. Get green intensity → samples
+4. Store with timestamps → times
+5. Apply FFT → freqs + fft
+6. Find peak frequency
+7. Convert → BPM
