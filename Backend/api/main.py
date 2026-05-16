@@ -85,8 +85,12 @@ class HeartbeatSessionFinishResponse(BaseModel):
 
 @app.post("/api/heartbeat/session/start", response_model=HeartbeatSessionStartResponse)
 def start_session(req: HeartbeatSessionStartRequest) -> HeartbeatSessionStartResponse:
-    sess = sessions.create(duration_sec=req.duration_sec)
-    return HeartbeatSessionStartResponse(session_id=sess.session_id, status="running")
+    try:
+        sess = sessions.create(duration_sec=req.duration_sec)
+        return HeartbeatSessionStartResponse(session_id=sess.session_id, status="running")
+    except Exception as e:
+        print(f"Error creating session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to initialize heartbeat session: {str(e)}")
 
 
 @app.post("/api/heartbeat/session/{session_id}/frame", response_model=HeartbeatSessionFrameResponse)

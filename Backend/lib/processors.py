@@ -165,9 +165,12 @@ class findFaceGetPulse:
         self.bpm = 0  # Keep for backward compatibility
         
         dpath = resource_path("haarcascade_frontalface_alt.xml")
+        print(f"Loading cascade from: {dpath}")
         if not os.path.exists(dpath):
-            print("Cascade file not present!")
+            raise FileNotFoundError(f"Cascade file not found at: {dpath}")
         self.face_cascade = cv2.CascadeClassifier(dpath)
+        if self.face_cascade.empty():
+            raise RuntimeError(f"Failed to load cascade classifier from: {dpath}")
 
         # Multi-face tracking
         self.face_trackers: Dict[int, FaceTracker] = {}
