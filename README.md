@@ -1,15 +1,16 @@
 # 🩺 Smart Healthcare Management System
 
-> **An AI-powered Healthcare Management Platform featuring Real-time Heartbeat Detection and Doctor Appointment Management.**
+> **An AI-powered Healthcare Management Platform built on Real-time Face Detection, delivering contactless Heartbeat Monitoring and Doctor Appointment Management.**
 
 [![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-8-purple?logo=vite)](https://vitejs.dev/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Python-green?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![OpenCV](https://img.shields.io/badge/OpenCV-Computer%20Vision-blue?logo=opencv)](https://opencv.org/)
+[![Haar Cascade](https://img.shields.io/badge/Haar%20Cascade-Face%20Detection-red)](https://docs.opencv.org/4.x/db/d28/tutorial_cascade_classifier.html)
 [![Python](https://img.shields.io/badge/Python-3.x-yellow?logo=python)](https://python.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A modern healthcare platform that combines **AI-powered heartbeat monitoring** with an intuitive **doctor appointment management system**. The application enables users to monitor heart rate using computer vision techniques while also providing a seamless experience for booking and managing doctor appointments.
+A modern healthcare platform whose core is a **real-time face detection engine**. Faces are located in the live camera feed, tracked frame to frame, and used to isolate the forehead region from which the heart rate is estimated — entirely contactless. Alongside this, the platform provides a seamless experience for booking and managing doctor appointments.
 
 ---
 
@@ -17,8 +18,11 @@ A modern healthcare platform that combines **AI-powered heartbeat monitoring** w
 
 The Smart Healthcare Management System is designed to improve accessibility to healthcare services by integrating two essential modules into one platform.
 
-- ❤️ AI-based Heartbeat Detection using Computer Vision
+- 🙂 Real-time Face Detection & Multi-Face Tracking
+- ❤️ Contactless Heartbeat Estimation from the detected face
 - 🏥 Doctor Appointment Booking & Management
+
+Detecting Heartbeat per sec by face detection is the foundation of the health module: no face, no signal. Every heart rate reading begins with locating and locking onto a face.
 
 The frontend is built with **React + Vite**, while the backend uses **FastAPI**, enabling fast API responses and scalable architecture.
 
@@ -26,12 +30,26 @@ The frontend is built with **React + Vite**, while the backend uses **FastAPI**,
 
 # ✨ Key Features
 
+## 🙂 Face Detection & Tracking
+
+- Haar Cascade Face Detection
+- Multi-Face Detection in a Single Frame
+- Per-Face Identity Tracking Across Frames
+- Centroid-Distance Face Matching
+- Automatic Timeout for Faces That Leave the Frame
+- Grayscale + Histogram Equalization Pre-processing
+- Live Face and Forehead Bounding Box Overlays
+- Colour-Coded Labels per Detected Face
+
+---
+
 ## ❤️ AI Heartbeat Detection
 
+- Forehead Region Extracted from Each Detected Face
 - Real-time Heart Rate Monitoring
 - Camera-based Pulse Detection
 - Live Frame Processing
-- Heartbeat Analysis Results
+- Per-Face BPM Results
 - Session-based Detection
 - FastAPI Background Processing
 
@@ -50,6 +68,7 @@ The frontend is built with **React + Vite**, while the backend uses **FastAPI**,
 
 - Modern Responsive UI
 - React Router Navigation
+- Live Camera Scan Modal
 - Real-time API Integration
 - Interactive Components
 - Clean Healthcare Dashboard
@@ -59,7 +78,8 @@ The frontend is built with **React + Vite**, while the backend uses **FastAPI**,
 ## ⚡ Backend Features
 
 - RESTful FastAPI APIs
-- OpenCV Image Processing
+- OpenCV Face Detection Pipeline
+- Multi-Face Tracker Management
 - SQLAlchemy Database
 - Modular API Structure
 - Background Task Processing
@@ -76,6 +96,9 @@ The frontend is built with **React + Vite**, while the backend uses **FastAPI**,
 | Language | Python |
 | Database | SQLite + SQLAlchemy |
 | Computer Vision | OpenCV |
+| Face Detection | Haar Cascade Classifier |
+| Face Tracking | Centroid Distance Matching |
+| Signal Processing | FFT, Hamming Window |
 | Data Processing | NumPy |
 | Visualization | Matplotlib |
 | Testing | PyTest |
@@ -95,11 +118,17 @@ ReactFrontend --> HeartbeatAPI
 
 AppointmentAPI --> Database
 
-HeartbeatAPI --> OpenCV
+HeartbeatAPI --> CameraFrames
 
-OpenCV --> AIProcessing
+CameraFrames --> FaceDetection
 
-AIProcessing --> Results
+FaceDetection --> FaceTracking
+
+FaceTracking --> ForeheadROI
+
+ForeheadROI --> SignalProcessing
+
+SignalProcessing --> Results
 ```
 
 ---
@@ -112,7 +141,7 @@ sequenceDiagram
 participant User
 participant Frontend
 participant FastAPI
-participant OpenCV
+participant FaceDetector
 participant Database
 
 User->>Frontend: Open Application
@@ -121,9 +150,13 @@ Frontend->>FastAPI: API Request
 
 alt Heartbeat Detection
 
-FastAPI->>OpenCV: Process Camera Frames
+FastAPI->>FaceDetector: Send Camera Frames
 
-OpenCV-->>FastAPI: Heart Rate
+FaceDetector->>FaceDetector: Detect and Track Faces
+
+FaceDetector->>FaceDetector: Extract Forehead Region
+
+FaceDetector-->>FastAPI: Face Boxes and Heart Rate
 
 FastAPI-->>Frontend: Results
 
@@ -142,6 +175,38 @@ end
 
 # ⚙️ How It Works
 
+## 🙂 Face Detection Pipeline
+
+1. Camera frame is converted to grayscale.
+
+2. Histogram equalization normalizes lighting.
+
+3. Haar Cascade classifier scans the frame.
+
+4. Multi-scale detection returns all face rectangles.
+
+5. Regions below the minimum size are rejected.
+
+6. Each face rectangle is drawn on the output frame.
+
+---
+
+## 🎯 Face Tracking
+
+1. Detected faces are matched to existing trackers.
+
+2. Matching uses distance between face centers.
+
+3. Matched faces keep their existing face ID.
+
+4. Unmatched faces receive a new tracker and colour.
+
+5. Faces missing beyond the timeout are removed.
+
+6. Each tracked face maintains its own signal buffer.
+
+---
+
 ## ❤️ Heartbeat Detection Module
 
 1. User starts heartbeat scan.
@@ -150,11 +215,19 @@ end
 
 3. Frames are sent to FastAPI.
 
-4. OpenCV processes facial regions.
+4. Face detection locates every face.
 
-5. Signal processing estimates pulse.
+5. Forehead region is derived from the face box.
 
-6. Heart rate is returned to frontend.
+6. Mean colour intensity is sampled per frame.
+
+7. Signal is interpolated, windowed and detrended.
+
+8. FFT extracts the dominant frequency.
+
+9. Peak within the valid BPM band becomes the heart rate.
+
+10. Heart rate is returned to frontend per face.
 
 ---
 
@@ -199,7 +272,13 @@ Healthcare-Management-System
 │   │   └── main.py
 │   │
 │   ├── lib
+│   │   ├── processors.py
+│   │   ├── device.py
+│   │   └── interface.py
+│   │
 │   ├── tests
+│   ├── haarcascade_frontalface_alt.xml
+│   ├── get_pulse.py
 │   ├── requirements.txt
 │   └── app.db
 │
@@ -254,6 +333,7 @@ Contains FastAPI server.
 
 REST APIs for
 
+- Face Detection Scan
 - Heartbeat Detection
 - Appointments
 - Database
@@ -261,7 +341,15 @@ REST APIs for
 
 ### lib/
 
-Core heartbeat processing algorithms.
+Core face detection and pulse processing algorithms.
+
+- processors.py — face detector, face trackers, BPM estimation
+- device.py — camera access and frame capture
+- interface.py — display and drawing helpers
+
+### haarcascade_frontalface_alt.xml
+
+Pre-trained Haar Cascade model used to detect frontal faces.
 
 ### tests/
 
@@ -270,6 +358,15 @@ Unit testing modules.
 ---
 
 # 📡 API Modules
+
+## 🙂 Face Detection APIs
+
+- Start Face Detection Session
+- Stream Camera Frames
+- Return Detected Face Regions
+- Track Faces Across Frames
+
+---
 
 ## ❤️ Heartbeat APIs
 
@@ -294,7 +391,7 @@ Unit testing modules.
 ## Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/Healthcare-Management-System.git
+git clone https://github.com/anishkumar51555/Healthcare-Management-System.git
 ```
 
 ## Frontend
@@ -336,6 +433,10 @@ Python 3.10+
 
 Node.js 22+
 
+Webcam access is required for face detection.
+
+Good, even lighting improves detection accuracy.
+
 ---
 
 # 📸 Demo
@@ -343,8 +444,9 @@ Node.js 22+
 Recommended video flow (90–120 seconds)
 
 - Landing Page
-- Heartbeat Detection
-- Live Camera Scan
+- Face Detection Scan
+- Live Face and Forehead Bounding Boxes
+- Multiple Faces Detected Together
 - Heart Rate Results
 - Appointment Booking
 - Appointment Dashboard
@@ -355,6 +457,10 @@ Recommended video flow (90–120 seconds)
 
 # 💡 Future Improvements
 
+- Deep Learning Face Detector (DNN / MediaPipe)
+- Facial Landmark-based ROI Selection
+- Face Recognition for Patient Identity
+- Improved Tracking Under Head Movement
 - User Authentication
 - Doctor Login Portal
 - Patient Dashboard
@@ -404,8 +510,8 @@ Distributed under the MIT License.
 
 # 👨‍💻 Author
 
-**Aditya Kumar Singh**
+**Anish Kumar**
 
-GitHub: https://github.com/Aditya2584
+GitHub: https://github.com/anishkumar51555
 
 If you found this project useful, consider giving it a ⭐.
