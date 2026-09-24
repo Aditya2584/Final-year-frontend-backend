@@ -508,10 +508,4 @@ Distributed under the MIT License.
 
 ---
 
-# 👨‍💻 Author
-
-**Anish Kumar**
-
-GitHub: https://github.com/anishkumar51555
-
 If you found this project useful, consider giving it a ⭐.
